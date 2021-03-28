@@ -17,7 +17,8 @@ class Ball {
     var angle = this.body.angle;
     push();
     translate(pos.x, pos.y);
-    rotate(angle*60);
+    angleMode(CENTER)
+    rotate(angle);
     ellipseMode(CENTER);
     fill(0);
     ellipse(0, 0, this.radius*2, this.radius*2);

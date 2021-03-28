@@ -15,7 +15,9 @@ class Box {
   display(){
     var pos =this.body.position;
     var angle = this.body.angle;
+    
     push();
+    angleMode(CENTER)
     translate(pos.x, pos.y);
     rotate(angle);
     rectMode(CENTER);

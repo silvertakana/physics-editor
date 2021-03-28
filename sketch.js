@@ -3,9 +3,11 @@ const World= Matter.World;
 const Bodies = Matter.Bodies;
 const Constraint = Matter.Constraint;
 var engine, world;
-var balls = [],box = [],ui = [],placetype = null,isStatic = false,isRunning = false,boxlength = 0,balllength = 0;
+var balls = [],box = [],ui = [],joint = [],placetype = null,isStatic = false,isRunning = false,boxlength = 0,balllength = 0,selecting = false,a,b;
 var startx,starty,endx,endy;
 function setup(){
+    a = null;
+    b = null;
     startx = null;
     starty = null;
     endx = null;
@@ -16,9 +18,9 @@ function setup(){
     ui[0] = new Button(0+100,height/2+100,100,25,"static",25,-5,3,"lightblue");
     ui[1] = new Button(0+100,height/2-200,100,25,"box",25,-5,3,"lightblue");
     ui[2] = new Button(0+100,height/2-150,100,25,"ball",25,-5,3,"lightblue");
-    ui[3] = new Button(0+100,height/2-100,100,25,"joint",25,-5,3,"lightblue");
-    ui[4] = new Button(0+100,height/2-50,100,25,"run",25,-5,3,"lightgreen");
-    ui[5] = new Button(0+100,height/2,100,25,"clear",25,-5,3,"yellow");
+    //ui[3] = new Button(0+100,height/2-100,100,25,"joint",25,-5,3,"lightblue");
+    ui[3] = new Button(0+100,height/2-50,100,25,"run",25,-5,3,"lightgreen");
+    ui[4] = new Button(0+100,height/2,100,25,"clear",25,-5,3,"yellow");
     //ui[5] = new Button(0+100,height/2,100,25,"lol",25,-5,3,"lightgreen");
     //console.log()
 	//box[1] = true
@@ -33,9 +35,19 @@ function draw(){
 	
     if(placetype === "box"){
         createbox();
+    }else if(placetype === "ball"){
+        createball();
+    }//else if(placetype === "joint"){
+    //     jointing();
+    //     selecting = true
+    // }
+    
+    
+    if(placetype !== "joint"){
+        selecting = false
     }
    render();
-   print(box[1])
+   //print(placetype)
    UI();
 }
 function render() {
@@ -44,11 +56,28 @@ function render() {
             //if(box[index] !== undefined){
                 
                 box[index].display();
+                
+                if(selecting){
+                    let pos = box[index].body.position
+                    ellipse(pos.x,pos.y,min(box[index].width,box[index].height))
+                }
+                
             //}
         }
         for (let index = 0; index < balllength; index++) {
-                ball[index].display();
+                balls[index].display();
+                if(selecting){
+                let pos = balls[index].body.position
+                ellipse(pos.x,pos.y,balls[index].radius*2)
+            }
         }
+        // for (let index = 0; index < balllength; index++) {
+        //     joint[index].display();
+        //     if(selecting){
+        //     let pos = balls[index].body.position
+        //     ellipse(pos.x,pos.y,balls[index].radius*2)
+        //     }
+    
 }
 function createbox() {
     var nottouchbutton = true
@@ -87,6 +116,47 @@ function createbox() {
         }
     }
 }
+function jointing(){
+   
+    var nottouchbutton = true
+    for (let index = 0; index < ui.length; index++) {
+        if(ui[index].isOver()){
+            nottouchbutton = false;
+        }
+    }
+    
+    if(nottouchbutton){
+        if(mouseIsPressed){
+            
+            if(a === null){
+                a = findtouch()
+            }else{
+                console.log(a,b)
+                b = findtouch()
+                let posB = b.position
+                let posA = a.position   
+                let dista = dist(posA.x,posA.y,posB.x,posB.y) 
+                //joint.push(new Joint(a,b,dista,.5))
+                a = null
+                b = null
+            }
+        }
+    }
+}
+function findtouch(){
+    for (let index = 0; index < boxlength; index++) {
+        let pos = box[index].body.position    
+        if(dist(mouseX,mouseY,pos.x,pos.y)<min(box[index].width,box[index].height)){
+               return box[index].body;
+        }
+    }
+    for (let index = 0; index < balllength; index++) {
+            let pos = balls[index].body.position
+            if(dist(mouseX,mouseY,pos.x,pos.y)<balls[index].radius*2){
+                return balls[index].body;
+         }
+    }
+}
 function createball() {
     var nottouchbutton = true
     for (let index = 0; index < ui.length; index++) {
@@ -105,16 +175,16 @@ function createball() {
             }
             var radius = dist(startx,starty,mouseX,mouseY)
             ellipseMode(CENTER)
-            ellipse(startx,starty,radius*2,radius*2)
+            ellipse(startx,starty,radius*2)
         }else{
             if(startx !== null){
                 endx = mouseX;
                 endy = mouseY;
                 let radius = dist(startx,starty,endx,endy);
-                let x = (endx + startx)/2
-                let y = (endy + starty)/2
+                let x = startx
+                let y = starty
                
-                ball[balllength] = new balls(x,y,radius,isStatic)
+                balls[balllength] = new Ball(x,y,radius,isStatic)
                 balllength+=1
                 //print(boxlength)
                 startx = null;
@@ -126,7 +196,7 @@ function createball() {
     }
 }
 function mouseClicked() {
-    for (var index = 1; index < 4; index++) {
+    for (var index = 1; index < 3; index++) {
         //const element = array[index];
         if(ui[index].isOver()){
             if(ui[index].word === placetype){
@@ -141,7 +211,7 @@ function mouseClicked() {
         }
     }
     
-    if(ui[4].isOver()){
+    if(ui[3].isOver()){
         if(isRunning === true){
             isRunning = false;
         }else{
@@ -156,17 +226,23 @@ function mouseClicked() {
             isStatic = true;
         }
     }
-    if(ui[5].isOver()){
+    if(ui[4].isOver()){
         for (let index = 0; index < boxlength; index++) {
-            //box[index] = undefined;
+            //box = []
             World.remove(world,box[index].body);
+            
+        }
+        for (let index = 0; index < balllength; index++) {
+           // ball = []
+            World.remove(world,balls[index].body);
         }
         boxlength = 0;
+        balllength = 0;
     }
     
 }
 function colour() {
-    for (var index = 1; index < 4; index++) {
+    for (var index = 1; index < 3; index++) {
         //const element = array[index];
         if(ui[index].word === placetype){
             ui[index].colour = "white";
@@ -176,11 +252,11 @@ function colour() {
         }
     }
     if(isRunning === true){
-        ui[4].colour = "red";
-        ui[4].word = "stop";
+        ui[3].colour = "red";
+        ui[3].word = "stop";
     }else{
-        ui[4].colour = "lightgreen";
-        ui[4].word = "run";
+        ui[3].colour = "lightgreen";
+        ui[3].word = "run";
     }
     if(isStatic === true){
         ui[0].colour = "purple";
